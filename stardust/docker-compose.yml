@@ -63,10 +63,14 @@ services:
     image: traefik:v2.9
     command:
       - "--providers.docker=true"
+      # helpful for debugging
+      #- "--api.insecure=true"
+      #- "--api.dashboard=true"
       - "--providers.docker.exposedbydefault=false"
       - "--metrics.prometheus=true"
       - "--entrypoints.web.address=:80"
     ports:
+      #- "127.0.0.1:8080:8080/tcp"
       - "${HTTP_PORT:-80}:80/tcp"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
@@ -266,13 +270,13 @@ services:
       - "traefik.http.services.wasp-api.loadbalancer.server.port=9090"
       - "traefik.http.routers.wasp-api.middlewares=rewrite-wasp-api"
       - "traefik.http.middlewares.rewrite-wasp-api.stripprefix.prefixes=/wasp/api"
-      - "traefik.http.middlewares.scrape-auth.basicauth.users=scrape:${SCRAPE_PASSWORD:-$$apr1$$q2svInMc$$ixS4ojmNyFRAMyjC4nDiI1}"
+      - "traefik.http.middlewares.scrape-auth.basicauth.users=scrape:${SCRAPE_PASSWORD:-$$apr1$$GBc4yhqf$$LGDEsleleiIDQusnsNgFJ.}"
       - "traefik.http.middlewares.rewrite-wasp-prometheus.stripprefix.prefixes=/wasp/prometheus"
       - "traefik.http.routers.wasp-prometheus-exporter.middlewares=scrape-auth,rewrite-wasp-prometheus"
       - "traefik.http.routers.wasp-prometheus-exporter.rule=Host(`${NODE_HOST:-localhost}`) && PathPrefix(`/wasp/prometheus`)"
       - "traefik.http.routers.wasp-prometheus-exporter.service=wasp-prometheus-exporter"
       - "traefik.http.services.wasp-prometheus-exporter.loadbalancer.server.port=9312"
-      - "traefik.http.middlewares.pprof-auth.basicauth.users=scrape:${PPROF_PASSWORD:-$$apr1$$q2svInMc$$ixS4ojmNyFRAMyjC4nDiI1}"
+      - "traefik.http.middlewares.pprof-auth.basicauth.users=scrape:${PPROF_PASSWORD:-$$apr1$$GBc4yhqf$$LGDEsleleiIDQusnsNgFJ.}"
       - "traefik.http.middlewares.rewrite-wasp-pprof.stripprefix.prefixes=/wasp/pprof"
       - "traefik.http.routers.wasp-pprof-exporter.middlewares=pprof-auth,rewrite-wasp-pprof"
       - "traefik.http.routers.wasp-pprof-exporter.rule=Host(`${NODE_HOST:-localhost}`) && PathPrefix(`/wasp/pprof`)"
@@ -326,3 +330,29 @@ services:
       - L1_API_URL=http://${NODE_HOST:-localhost}
     profiles:
       - wasp
+
+##################################################################
+#  Node Exporter                                                 #
+##################################################################
+  node_exporter:
+    image: prom/node-exporter:v1.1.0
+    container_name: node_exporter
+    command:
+      - '--path.rootfs=/host'
+    expose:
+      # prometheus exporter
+      - "9100"
+    pid: host
+    cap_add:
+      - SYS_TIME
+    restart: unless-stopped
+    volumes:
+      - '/:/host:ro,rslave'
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.middlewares.scrape-auth.basicauth.users=scrape:${SCRAPE_PASSWORD:-$$apr1$$GBc4yhqf$$LGDEsleleiIDQusnsNgFJ.}"
+      - "traefik.http.middlewares.rewrite-node-exporter.stripprefix.prefixes=/node-exporter"
+      - "traefik.http.routers.node-exporter.middlewares=scrape-auth,rewrite-node-exporter"
+      - "traefik.http.routers.node-exporter.rule=Host(`${NODE_HOST:-localhost}`) && PathPrefix(`/node-exporter`)"
+      - "traefik.http.routers.node-exporter.service=node-exporter"
+      - "traefik.http.services.node-exporter.loadbalancer.server.port=9100"

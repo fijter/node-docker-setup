@@ -308,6 +308,7 @@ services:
       - "--profiling.bindAddress=wasp:6060"
       - "--chains.pipeliningLimit=20"
       - "--webapi.debugRequestLoggerEnabled=true"
+      - "--chains.consensusDelay=750ms"
 
     profiles:
       - wasp

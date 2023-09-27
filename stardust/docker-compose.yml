@@ -254,7 +254,7 @@ services:
 
   wasp:
     container_name: wasp
-    image: fundamentalwasp/wasp:ninja
+    image: fundamentalwasp/wasp:develop
     stop_grace_period: 5m
     restart: unless-stopped
     depends_on:

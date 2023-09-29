@@ -254,7 +254,7 @@ services:
 
   wasp:
     container_name: wasp
-    image: fundamentalwasp/wasp:develop
+    image: iotaledger/wasp:1.0-rc
     stop_grace_period: 5m
     restart: unless-stopped
     depends_on:
